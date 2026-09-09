@@ -1,6 +1,7 @@
 {
   "best_lsa": 20,
   "best_lda": 20,
+  "best_nmf": 15,
   "topn": 10,
   "n_docs": 9785,
   "n_terms": 2210,

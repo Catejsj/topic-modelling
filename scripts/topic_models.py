@@ -1,6 +1,7 @@
 """Fit LSA and LDA over the preprocessed titles and choose the number of topics.
 
-Two approaches, deliberately different in kind:
+Two required approaches, deliberately different in kind, plus one optional
+third for comparison:
 
   LSA  Latent Semantic Analysis. TF-IDF matrix, then truncated SVD. Linear
        algebra: it finds the k directions that explain the most variance in the
@@ -11,6 +12,12 @@ Two approaches, deliberately different in kind:
        is a mixture over k topics, every topic is a distribution over words.
        Fitted by variational Bayes. Weights are probabilities and sum to 1,
        which is what makes "this title is 60% topic 3" a meaningful sentence.
+
+  NMF  Non-negative Matrix Factorisation (optional third comparison). Also a
+       TF-IDF factorisation, like LSA, but constrained to non-negative factors,
+       so a topic's words are always additive, never a contrast. Fitted by
+       coordinate descent, not Bayesian and not probabilistic. Reported next to
+       LSA and LDA as a cross-check, not as a replacement for either.
 
 Number of topics is selected by sweeping k and scoring every model. Nothing is
 chosen by eye.
@@ -37,7 +44,7 @@ import numpy as np
 import pandas as pd
 from gensim.corpora import Dictionary
 from gensim.models import CoherenceModel, LdaModel
-from sklearn.decomposition import TruncatedSVD
+from sklearn.decomposition import NMF, TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,6 +86,19 @@ def lsa_topics(svd: TruncatedSVD, terms: np.ndarray, topn: int) -> list[list[str
     out = []
     for row in svd.components_:
         idx = np.argsort(np.abs(row))[::-1][:topn]
+        out.append([str(terms[i]) for i in idx])
+    return out
+
+
+def nmf_topics(nmf: NMF, terms: np.ndarray, topn: int) -> list[list[str]]:
+    """Top words per NMF component, by loading.
+
+    Unlike LSA, NMF loadings are constrained non-negative, so the largest
+    value is always the most representative word - no absolute value needed.
+    """
+    out = []
+    for row in nmf.components_:
+        idx = np.argsort(row)[::-1][:topn]
         out.append([str(terms[i]) for i in idx])
     return out
 
@@ -188,6 +208,36 @@ def main() -> None:
     sweep = pd.DataFrame(rows)
     say()
 
+    # --- NMF, the optional third comparison -------------------------------
+    say("[2b] NMF SWEEP (optional third comparison)")
+    say("    Same TF-IDF matrix as LSA, factorised under a non-negativity")
+    say("    constraint instead of an orthogonality one. Scored the same way as")
+    say("    LSA and LDA so the three are directly comparable.")
+    say()
+    header_nmf = f"    {'k':>3} | {'NMF c_v':>8} {'NMF u_mass':>10} | {'sec':>5}"
+    say(header_nmf)
+    say("    " + "-" * (len(header_nmf) - 4))
+
+    nmf_rows = []
+    nmf_models: dict[int, NMF] = {}
+    for k in K_GRID:
+        t0 = time.time()
+        nmf = NMF(n_components=k, init="nndsvda", random_state=SEED,
+                  max_iter=400)
+        nmf.fit(X)
+        nmf_words = nmf_topics(nmf, terms, args.topn)
+        nmf_cv = CoherenceModel(topics=nmf_words, texts=docs,
+                                dictionary=dictionary, coherence="c_v").get_coherence()
+        nmf_um = CoherenceModel(topics=nmf_words, texts=docs, corpus=bow,
+                                dictionary=dictionary, coherence="u_mass").get_coherence()
+        secs = time.time() - t0
+        say(f"    {k:>3} | {nmf_cv:>8.3f} {nmf_um:>10.3f} | {secs:>5.0f}")
+        nmf_rows.append(dict(k=k, nmf_cv=nmf_cv, nmf_umass=nmf_um))
+        nmf_models[k] = nmf
+
+    sweep = sweep.merge(pd.DataFrame(nmf_rows), on="k")
+    say()
+
     def knee(col: str) -> int:
         """Elbow of a score-vs-k curve: the k furthest from the straight line
         joining the first and last point (the Kneedle idea, done by hand).
@@ -208,6 +258,7 @@ def main() -> None:
     peak_lda = int(sweep.loc[sweep["lda_cv"].idxmax(), "k"])
     best_lsa = knee("lsa_cv")
     best_lda = knee("lda_cv")
+    best_nmf = knee("nmf_cv")
 
     say("[3] SELECTION")
     say("    c_v is the primary measure because it is the one validated against")
@@ -233,6 +284,7 @@ def main() -> None:
     say()
     say(f"      LSA elbow k = {best_lsa}")
     say(f"      LDA elbow k = {best_lda}")
+    say(f"      NMF elbow k = {best_nmf}  (optional third comparison, see [2b])")
     say()
     say("    These are the candidates carried into human evaluation")
     say("    (scripts/human_eval.py), which is what actually confirms the choice.")
@@ -266,19 +318,30 @@ def main() -> None:
         words = [w for w, _ in lda.show_topic(t, topn=args.topn)]
         share = (lda_doc.argmax(axis=1) == t).mean()
         say(f"      LDA {t:>2}  ({share:>5.1%} of titles)  {', '.join(words)}")
+    say()
+
+    nmf = nmf_models[best_nmf]
+    nmf_doc = nmf.transform(X)
+    say(f"    NMF  k={best_nmf}  (optional third comparison)")
+    for t, words in enumerate(nmf_topics(nmf, terms, args.topn)):
+        say(f"      NMF {t:>2}  {', '.join(words)}")
 
     lda.save(str(MODELS / "lda.model"))
     np.save(MODELS / "lsa_components.npy", svd.components_)
     np.save(MODELS / "lsa_doc.npy", lsa_doc)
     np.save(MODELS / "lda_doc.npy", lda_doc)
+    np.save(MODELS / "nmf_components.npy", nmf.components_)
+    np.save(MODELS / "nmf_doc.npy", nmf_doc)
     dictionary.save(str(MODELS / "dictionary.dict"))
     (MODELS / "meta.json").write_text(json.dumps(
-        dict(best_lsa=best_lsa, best_lda=best_lda, topn=args.topn,
-             n_docs=len(df), n_terms=len(dictionary), seed=SEED), indent=2))
+        dict(best_lsa=best_lsa, best_lda=best_lda, best_nmf=best_nmf,
+             topn=args.topn, n_docs=len(df), n_terms=len(dictionary),
+             seed=SEED), indent=2))
 
     df["lsa_topic"] = lsa_doc.argmax(axis=1)
     df["lda_topic"] = lda_doc.argmax(axis=1)
     df["lda_prob"] = lda_doc.max(axis=1)
+    df["nmf_topic"] = nmf_doc.argmax(axis=1)
     df.drop(columns=["tokens"]).assign(
         tokens=[" ".join(d) for d in docs]
     ).to_csv(ROOT / "data" / "processed" / "doc_topics.csv", index=False)

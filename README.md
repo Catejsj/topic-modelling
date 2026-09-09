@@ -7,6 +7,11 @@ back to views.
 
 Dataset: [True Crime Channel Statistics](https://www.kaggle.com/datasets/mhapich/true-crime-channel-statistics)
 (mhapich, Kaggle, CC0 1.0), collected through the official YouTube Data API v3.
+Legal/ethical notes (licence, ToS, personal data) are in `reports/01_corpus.txt`.
+
+NMF is fitted alongside LSA and LDA as the optional third comparison, and RQ2
+(does topic predict views?) is tested with Kruskal-Wallis plus a Holm-Bonferroni
+corrected Mann-Whitney post-hoc, not just eyeballed confidence intervals.
 
 ## Headline result
 

@@ -37,7 +37,22 @@
 
     Confidence intervals that overlap mean the two topics are not
     distinguishable at this sample size. Read the table by bands, not
-    by rank.
+    by rank. The Kruskal-Wallis test below makes this precise.
+
+[2a] KRUSKAL-WALLIS TEST ACROSS LDA TOPICS
+    view_ratio is heavily right-skewed (median 1.00, 90th pct 5.2x),
+    so ANOVA's normal-residual assumption does not hold. Kruskal-Wallis is its non-parametric
+    equivalent, run on the 30+-video topics from [2].
+
+    H(19) = 418.4, p = 6.49e-77  (20 topics, 9,785 videos)
+    At least one topic's view_ratio differs from the rest - the
+    split in [2] is not sampling noise.
+
+    Post-hoc: all 190 topic pairs compared with a two-sided
+    Mann-Whitney U test, Holm-Bonferroni corrected for running that
+    many comparisons at once.
+    73 / 190 pairs differ significantly (adjusted p < .05).
+    Best vs worst (topic 7 vs 12): adjusted p = 1.83e-17 - differ.
 
 [3] REGRESSION  (log2 view_ratio on all topic proportions at once)
     Assigning each title to its single best topic throws away the fact

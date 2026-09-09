@@ -14,23 +14,35 @@ Three views of the same question:
   [2] per topic       median view_ratio for the titles the model assigns to
                       each topic, with a bootstrap confidence interval so that
                       a topic with 60 videos is not read like one with 1,500.
+                      Backed by a Kruskal-Wallis test across topics and a
+                      Mann-Whitney post-hoc, because view_ratio is heavily
+                      right-skewed and not normal, so ANOVA's assumptions do
+                      not hold.
   [3] regression      all topic proportions entered at once, so each topic's
                       coefficient is its contribution holding the others fixed.
   [4] single words    the strongest individual title words, as a sanity check
                       that the topic story is not an artefact of the model.
 
-Output: reports/05_views_by_topic.txt, data/processed/topic_views.csv
+Correlation, not causation: a topic's view_ratio co-varies with things this
+script does not model - channel size (already partly controlled for by using
+a ratio), recency, thumbnail, upload time. A topic effect here is evidence,
+not proof, that the topic itself moves views.
+
+Output: reports/05_views_by_topic.txt, data/processed/topic_views.csv,
+        data/processed/topic_posthoc.csv
 """
 
 from __future__ import annotations
 
 import json
+from itertools import combinations
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from gensim.corpora import Dictionary
 from gensim.models import LdaModel
+from scipy.stats import kruskal, mannwhitneyu
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS = ROOT / "models"
@@ -119,7 +131,62 @@ def main() -> None:
     say()
     say("    Confidence intervals that overlap mean the two topics are not")
     say("    distinguishable at this sample size. Read the table by bands, not")
-    say("    by rank.")
+    say("    by rank. The Kruskal-Wallis test below makes this precise.")
+    say()
+
+    # --- [2a] Kruskal-Wallis + post-hoc -----------------------------------
+    say("[2a] KRUSKAL-WALLIS TEST ACROSS LDA TOPICS")
+    say(f"    view_ratio is heavily right-skewed (median 1.00, 90th pct "
+        f"{df['view_ratio'].quantile(0.9):.1f}x),")
+    say("    so ANOVA's normal-residual assumption does not hold. "
+        "Kruskal-Wallis is its non-parametric")
+    say(f"    equivalent, run on the {MIN_DOCS}+-video topics from [2].")
+    say()
+    tested = table[table["n"] >= MIN_DOCS]
+    topics_list = tested["topic"].astype(int).tolist()
+    groups = [df.loc[df["lda_topic"] == t, "view_ratio"].to_numpy()
+              for t in topics_list]
+    h_stat, p_kw = kruskal(*groups)
+    say(f"    H({len(groups) - 1}) = {h_stat:.1f}, p = {p_kw:.2e}  "
+        f"({len(groups)} topics, {sum(len(g) for g in groups):,} videos)")
+    if p_kw < 0.05:
+        say("    At least one topic's view_ratio differs from the rest - the")
+        say("    split in [2] is not sampling noise.")
+    else:
+        say("    No evidence the topics differ - the split in [2] could be")
+        say("    sampling noise.")
+    say()
+
+    m = len(groups) * (len(groups) - 1) // 2
+    say(f"    Post-hoc: all {m} topic pairs compared with a two-sided")
+    say("    Mann-Whitney U test, Holm-Bonferroni corrected for running that")
+    say("    many comparisons at once.")
+    pairs, raw_p = [], []
+    for (i, ti), (j, tj) in combinations(enumerate(topics_list), 2):
+        _, p = mannwhitneyu(groups[i], groups[j], alternative="two-sided")
+        pairs.append((ti, tj))
+        raw_p.append(p)
+    order = np.argsort(raw_p)
+    running_max = 0.0
+    adj_p = np.empty(len(raw_p))
+    for rank, idx in enumerate(order):
+        running_max = max(running_max, raw_p[idx] * (len(raw_p) - rank))
+        adj_p[idx] = min(running_max, 1.0)
+    posthoc = pd.DataFrame({"topic_a": [p[0] for p in pairs],
+                            "topic_b": [p[1] for p in pairs],
+                            "p_raw": raw_p, "p_holm": adj_p})
+    n_sig = int((posthoc["p_holm"] < 0.05).sum())
+    say(f"    {n_sig} / {m} pairs differ significantly (adjusted p < .05).")
+
+    best_t, worst_t = int(best.topic), int(worst.topic)
+    bw_mask = ((posthoc.topic_a == best_t) & (posthoc.topic_b == worst_t)) | \
+              ((posthoc.topic_a == worst_t) & (posthoc.topic_b == best_t))
+    bw = posthoc[bw_mask]
+    if len(bw):
+        p_bw = float(bw["p_holm"].iloc[0])
+        say(f"    Best vs worst (topic {best_t} vs {worst_t}): adjusted "
+            f"p = {p_bw:.2e} - "
+            f"{'differ' if p_bw < 0.05 else 'not distinguishable'}.")
     say()
 
     # --- [3] regression --------------------------------------------------
@@ -220,10 +287,12 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     pd.concat([table, lsa_table], ignore_index=True).to_csv(OUT, index=False)
     reg.to_csv(ROOT / "data" / "processed" / "topic_regression.csv", index=False)
+    posthoc.to_csv(ROOT / "data" / "processed" / "topic_posthoc.csv", index=False)
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"\nwrote {OUT.relative_to(ROOT)}")
     print(f"wrote data/processed/topic_regression.csv")
+    print(f"wrote data/processed/topic_posthoc.csv")
     print(f"wrote {REPORT.relative_to(ROOT)}")
 
 

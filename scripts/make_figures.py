@@ -63,6 +63,8 @@ def fig_sweep() -> None:
                     lw=0, zorder=2)
     ax.plot(d["k"], d["lsa_cv"], color=ORANGE, lw=2, marker="s", ms=5,
             label="LSA", zorder=3)
+    ax.plot(d["k"], d["nmf_cv"], color=RED, lw=1.5, ls=(0, (3, 2)),
+            marker="^", ms=4, label="NMF (optional)", zorder=2, alpha=0.85)
 
     chosen = meta["best_lda"]
     ax.axvline(chosen, color=MUTED, lw=1, ls=(0, (4, 3)), zorder=1)
