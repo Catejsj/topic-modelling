@@ -86,5 +86,7 @@ docs/              slide content and speaking script
 scripts/           the pipeline
 ```
 
-`docs/SLIDES_LSA_LDA.md` is the presentation deliverable: two slides, a
+`docs/PRESENTATION_PLAN_7_PEOPLE.md` splits the whole presentation across seven
+speakers, one per rubric criterion, with each person's slide bullets, script and
+sourced numbers. `docs/SLIDES_LSA_LDA.md` is the LSA/LDA part in full detail: two slides, a
 word-for-word script, Q&A prep, and a table deriving every number quoted.
