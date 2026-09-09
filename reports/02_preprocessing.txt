@@ -1,0 +1,109 @@
+[1] TOKENIZATION
+    Tool: nltk.word_tokenize, the Treebank tokenizer.
+    Why not str.split(): split() leaves punctuation attached, so
+    'killer?' and 'killer' become two different vocabulary entries, and
+    the topic model treats them as unrelated words. The Treebank
+    tokenizer separates punctuation and splits clitics, so 'don't'
+    becomes do + n't and is then expanded to 'do not' by the
+    contraction step that runs before it.
+    Why not a subword tokenizer (BPE/WordPiece): LSA and LDA need whole
+    words to produce readable topics. A topic listed as '##ing, murd,
+    ##er' cannot be interpreted by a human, and interpretation is the
+    point of topic modelling.
+
+[2] BRANDING REMOVAL
+    Every title from one channel repeats that channel's series tag.
+    Left in, the strongest 'topic' found is simply the channel.
+    A word is treated as branding if it appears in >= 30% of
+    one channel's own titles, or if it is part of the channel name.
+    It is removed only for that channel, so 'crime' stays a content
+    word for channels that do not put it in every title.
+
+    48 Hours                           hours, the
+    Annie Elise x 10 to LIFE           annie, elise, life, the, to, x
+    Bailey Sarian                      bailey, makeup, sarian
+    Bella Fiori                        bella, fiori, the
+    Buzzfeed Unsolved True Crime       buzzfeed, crime, of, the, true, unsolved
+    Coffeehouse Crime                  case, coffeehouse, crime, of, the
+    Crime Reel                         crime, of, reel, the
+    Danielle Kirsty                    beauty, danielle, kirsty, review, the
+    Dr. Todd Grande                    analysis, dr, grande, todd
+    Eleanor Neale                      eleanor, neale, the
+    Explore with Us                    explore, of, the, us, with
+    JCS - Criminal Psychology          case, criminal, jcs, of, psychology, the
+    Joshua Miles                       joshua, miles, the
+    Kendall Rae                        kendall, rae
+    Little Shop of Crime               case, crime, little, of, shop, the
+    Matt Orchard - Crime and Society   and, crime, matt, of, orchard, society, the
+    Stephanie Harlowe                  and, crime, harlowe, part, stephanie, the
+    That Chapter                       case, chapter, of, that, the
+    The Casual Criminalist             casual, criminalist, of, the
+    dreading (crime and psychology)    and, case, crime, dreading, of, psychology, the
+    this is MONSTERS                   is, monsters, the, this
+
+[3] WORKED EXAMPLE  (one title through every stage)
+    1 raw                            Was it Sacrifice or Serial Killer?? Leonarda Cianciulli | Mystery & Makeup | Bailey Sarian
+    2 normalized                     was it sacrifice or serial killer leonarda cianciulli mystery makeup bailey sarian
+    3 tokenized                      was | it | sacrifice | or | serial | killer | leonarda | cianciulli | mystery | makeup | bailey | sarian
+    4 stopwords + branding removed   sacrifice | serial | killer | leonarda | cianciulli | mystery
+    5 lemmatized                     sacrifice | serial | killer | leonarda | cianciulli | mystery
+    6 short tokens dropped           sacrifice | serial | killer | leonarda | cianciulli | mystery
+    7 phrases joined                 sacrifice | serial_killer | leonarda | cianciulli | mystery
+
+[4] LEMMATIZATION VS STEMMING
+    This run used: WordNet lemmatization
+    Lemmatization is the default. Topic modelling output is read by a
+    human, and the Porter stemmer produces non-words:
+      murderer         stem -> murder         lemma -> murderer
+      mysterious       stem -> mysteri        lemma -> mysterious
+      police           stem -> polic          lemma -> police
+      missing          stem -> miss           lemma -> missing
+      families         stem -> famili         lemma -> family
+      disappearance    stem -> disappear      lemma -> disappearance
+      confession       stem -> confess        lemma -> confession
+      studies          stem -> studi          lemma -> study
+    A topic printed as 'murder, mysteri, polic' cannot be labelled with
+    confidence in a presentation. The cost is speed, which does not
+    matter at 10k short documents.
+
+[5] PHRASE DETECTION
+    gensim Phrases (min_count=20, threshold=10) joined 41 bigrams.
+    Examples: antisocial_personality, anxiety_disorder, assessment_vignette, best_friend, borderline_personality, bryan_kohberger, cbt_role, chad_daybell, conspiracy_theory, counsel_diagnostic, crime_documentary, dark_history, dark_triad, excel_vba, first_impression, function_excel, ghost_town, life_death, lip_swatch, lori_vallow, love_triangle, makeup_tutorial, mental_health, middle_nowhere, miss_person
+    These are pairs that occur together far more often than chance,
+    so treating them as one token stops LDA from splitting a single
+    concept across two topics.
+
+[6] RESULT
+    titles in       10,026
+    titles kept     9,897  (dropped 129 left with < 2 tokens)
+    vocabulary before preprocessing 11,840
+    vocabulary after  preprocessing 10,223  (86.3% of the original)
+    tokens per title  mean 5.4, median 5
+    total tokens      53,359
+
+    most frequent tokens after cleaning:
+      case                     1,298
+      murder                   1,079
+      killer                   401
+      short                    361
+      personality              275
+      family                   260
+      disorder                 259
+      death                    236
+      mystery                  223
+      kill                     214
+      mental_health            204
+      find                     172
+      tutorial                 171
+      disappearance            169
+      spss                     160
+      solve                    152
+      man                      149
+      miss                     147
+      test                     144
+      disturb                  141
+      coffee                   139
+      makeup                   136
+      serial_killer            134
+      excel                    131
+      personality_disorder     125

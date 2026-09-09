@@ -1,0 +1,67 @@
+[1] SOURCE
+    file            data/raw/true_crime_channel_stats.csv
+    dataset         True Crime Channel Statistics (mhapich, Kaggle)
+    licence         CC0 1.0 Public Domain Dedication
+    collected from  the public YouTube Data API v3
+    rows as downloaded 10,107
+
+[2] FILTERING
+    empty title            -0
+    missing view count     -1
+    zero views             -11
+    duplicate channel+title -69
+    unparseable date       -0
+    kept                   10,026 of 10,107 (99.2%)
+
+[3] CORPUS DESCRIPTION
+    videos          10,026
+    channels        21
+    date range      2012-08-03 to 2023-05-21
+    title length    mean 9.0 words, median 8, min 1, max 24
+    views           median 133,680, mean 742,716, max 64,684,244
+
+[4] CHANNEL BALANCE  (the corpus is not balanced - see limitations)
+    channel                             videos   share  median views
+    Dr. Todd Grande                      2,838  28.3%        62,888
+    48 Hours                             1,319  13.2%         3,871
+    Kendall Rae                            684   6.8%       531,704
+    Buzzfeed Unsolved True Crime           673   6.7%       548,121
+    Bailey Sarian                          523   5.2%       303,270
+    Stephanie Harlowe                      495   4.9%       290,381
+    That Chapter                           490   4.9%     1,418,650
+    Bella Fiori                            441   4.4%       381,176
+    Annie Elise x 10 to LIFE               437   4.4%       181,578
+    Explore with Us                        411   4.1%       728,343
+    this is MONSTERS                       301   3.0%       310,704
+    The Casual Criminalist                 242   2.4%       212,104
+    Eleanor Neale                          239   2.4%     1,638,301
+    Danielle Kirsty                        238   2.4%        50,752
+    Crime Reel                             213   2.1%        43,166
+    Coffeehouse Crime                      164   1.6%     1,210,915
+    Joshua Miles                           161   1.6%        82,150
+    dreading (crime and psychology)         86   0.9%       512,182
+    Matt Orchard - Crime and Society        27   0.3%       328,594
+    Little Shop of Crime                    24   0.2%        61,535
+    JCS - Criminal Psychology               20   0.2%    15,943,809
+
+    largest channel is Dr. Todd Grande with 28.3% of all videos.
+    the most-watched channel's median video gets 4,119x the views of
+    the least-watched channel's median video, which is why the analysis
+    uses view_ratio (views divided by that channel's own median).
+
+[5] LEGAL AND ETHICAL NOTES
+    - The dataset is published on Kaggle under CC0 1.0, which places it
+      in the public domain and permits reuse including redistribution.
+    - The underlying data came from the official YouTube Data API v3,
+      not from scraping, so the platform terms of service were followed.
+    - Titles, view counts and channel names are public metadata that
+      any visitor to the channel page can read. No private data is used.
+    - Channel names identify creators, who are public figures acting in
+      a professional capacity. They are kept because the analysis has to
+      control for channel size. No comment authors or viewers appear in
+      the data, so there is no personal data to anonymise.
+    - Video descriptions contain creator contact details and sponsor
+      links. They are dropped: the research question is about titles.
+    - Content warning: the corpus is true crime, so titles name real
+      victims and offenders. Topics are reported at the aggregate level
+      and no claim is made about any individual case.

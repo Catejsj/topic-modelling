@@ -1,0 +1,8 @@
+{
+  "best_lsa": 20,
+  "best_lda": 20,
+  "topn": 10,
+  "n_docs": 9785,
+  "n_terms": 2210,
+  "seed": 42
+}

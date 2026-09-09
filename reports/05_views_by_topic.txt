@@ -1,0 +1,117 @@
+[1] OUTCOME VARIABLE
+    view_ratio = views / median views of the same channel
+    videos               9,785
+    median view_ratio    1.00 (1.00 by construction, per channel)
+    10th - 90th pct      0.13 - 5.17
+    The spread inside a single channel is already wide, so there is
+    something for the title to explain.
+
+[2] VIEW RATIO BY LDA TOPIC  (topic = the title's highest-probability topic)
+
+    topic  videos  median           95% CI  >channel median  top words
+        7    185    1.36 [ 1.22,  1.63]             64%  say, boyfriend, real, shoot, date, guilty
+       10    465    1.32 [ 1.17,  1.42]             60%  mystery, serial_killer, murder, case, unsolved, mysterious
+        8    304    1.29 [ 1.09,  1.41]             59%  victim, case, chris, boy, robert, todd
+        9    320    1.20 [ 1.00,  1.40]             56%  secret, murderer, teen, sister, death, evil
+       18    596    1.15 [ 1.04,  1.29]             56%  murder, case, wife, michael, inside, lead
+       13    927    1.13 [ 1.07,  1.21]             57%  murder, coffee, case, trial, idaho, student
+       15    521    1.11 [ 1.02,  1.29]             56%  death, girl, shock, call, case, sign
+        6    738    1.09 [ 1.00,  1.19]             53%  kill, disappearance, child, john, case, night
+       17    482    1.09 [ 0.98,  1.21]             53%  crime, mother, police, murder, daughter, case
+       14    607    1.05 [ 0.98,  1.14]             52%  family, man, bad, strange, case, friend
+       16  1,550    1.05 [ 1.00,  1.11]             52%  killer, case, solve, old, disturb, detail
+        4    417    1.04 [ 0.96,  1.14]             53%  life, woman, david, suspect, case, husband
+        5    273    0.93 [ 0.83,  1.14]             48%  use, world, charge, smith, black, end
+        0    215    0.86 [ 0.68,  1.02]             44%  makeup, lie, west, plot, dark, williams
+       19    378    0.81 [ 0.70,  0.93]             43%  bizarre, abandon, monster, control, turn, case
+        2    363    0.73 [ 0.63,  0.88]             42%  happen, house, talk, people, massacre, haunt
+        1    166    0.72 [ 0.59,  0.97]             41%  model, baby, jennifer, double, grwm, conspiracy
+       11    354    0.59 [ 0.51,  0.69]             35%  face, interview, tutorial, history, kidnap, tell
+        3    302    0.46 [ 0.40,  0.61]             31%  look, find, body, justice, dead, palette
+       12    622    0.45 [ 0.41,  0.51]             27%  short, test, love, parent, help, question
+
+    Highest: topic 7 at 1.36x the channel median (185 videos,
+             20 channels) - say, boyfriend, real, shoot, date, guilty
+    Lowest:  topic 12 at 0.45x (622 videos) - short, test, love, parent, help, question
+    The gap between the best and worst topic is 3.0x.
+
+    Confidence intervals that overlap mean the two topics are not
+    distinguishable at this sample size. Read the table by bands, not
+    by rank.
+
+[3] REGRESSION  (log2 view_ratio on all topic proportions at once)
+    Assigning each title to its single best topic throws away the fact
+    that most titles are a mixture. Here every topic proportion is a
+    predictor, so a coefficient is the effect of a title being entirely
+    that topic rather than the reference mixture, holding the rest fixed.
+
+    R2 = 0.064  - the topic of the title explains 6.4% of the variation in
+    within-channel views. Small, and that is the honest headline: the
+    topic matters, but most of what drives views is not in the title.
+
+    topic    coef  x views       t  top words
+        9    2.27    4.82x     6.7  secret, murderer, teen, sister, death
+       10    2.25    4.75x     7.0  mystery, serial_killer, murder, case, unsolved
+       16    2.25    4.74x     7.6  killer, case, solve, old, disturb
+       13    2.19    4.56x     7.4  murder, coffee, case, trial, idaho
+        8    1.99    3.96x     5.8  victim, case, chris, boy, robert
+       11   -0.34    0.79x    -1.0  face, interview, tutorial, history, kidnap
+        1   -0.47    0.72x    -1.3  model, baby, jennifer, double, grwm
+        2   -0.52    0.69x    -1.5  happen, house, talk, people, massacre
+        3   -1.48    0.36x    -4.4  look, find, body, justice, dead
+       12   -2.26    0.21x    -6.9  short, test, love, parent, help
+
+    coef is in log2 units: +1.00 means the title gets twice the views of
+    the reference topic (19), -1.00 means half. |t| above 2 is the usual
+    threshold for taking a coefficient seriously.
+
+[4] SINGLE WORDS  (sanity check, independent of both topic models)
+    For every word in at least 40 titles: the median view_ratio of the
+    titles containing it. No model involved, so if the topic story is
+    real the same themes should appear here.
+
+    179 words qualify.
+
+    strongest words
+      dark_history                66 titles    3.73x
+      mystery                    223 titles    3.12x
+      danger                      47 titles    2.49x
+      smith                       42 titles    2.33x
+      idaho                       49 titles    2.21x
+      guilty                      43 titles    2.15x
+      mental_health              204 titles    2.13x
+      controversy                 47 titles    1.96x
+      mysterious                  65 titles    1.94x
+      horror                      55 titles    1.91x
+      interview                   55 titles    1.85x
+      documentary                 44 titles    1.85x
+      personality                275 titles    1.80x
+      chris                       49 titles    1.76x
+      sign                        68 titles    1.74x
+
+    weakest words
+      eye                         54 titles    0.23x
+      tutorial                   171 titles    0.21x
+      client                      46 titles    0.21x
+      palette                     80 titles    0.19x
+      symptom                     51 titles    0.16x
+      review                      54 titles    0.13x
+      assessment_vignette         44 titles    0.09x
+      cbt_role                    69 titles    0.09x
+      counsel_diagnostic          40 titles    0.08x
+      session                     50 titles    0.05x
+
+[5] SAME QUESTION THROUGH LSA
+    If the two models tell the same story the finding is about the data,
+    not about the algorithm.
+
+    topic  videos  median  top words
+        2     335    1.68  personality, mental_health, case, short, life_death, solve
+        7     308    1.63  death, family, short, mysterious, disorder, bizarre
+        1     823    1.37  case, murder, killer, personality, mental_health, solve
+        8     269    1.36  disappearance, solve, mystery, family, coffee, death
+        9     642    0.41  spss, test, excel, disappearance, anova, variable
+       19     454    0.37  makeup, tutorial, cbt_role, session, play_complete, use
+       13     694    0.32  tutorial, mystery, makeup, face, palette, look
+        5      55    0.22  disorder, short, death, borderline_personality, serial_killer, family
+
