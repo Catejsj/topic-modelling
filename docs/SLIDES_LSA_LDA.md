@@ -5,7 +5,10 @@ Two slides.
 - **Part A** is for whoever builds the slides. Copy the text in the boxes onto
   the slide. Nothing else goes on the slide.
 - **Part B** is what I say out loud. Nobody needs to read it except me.
-- **Part C** explains the words in case someone asks.
+- **Part C** explains every picture: what the numbers mean and how we got them.
+- **Part D** explains the technical words in case someone asks.
+- **Parts E to G** are Q&A prep, where each number came from, and what is still
+  unfinished.
 
 Our group question: **what kind of video title gets the most views?**
 
@@ -147,7 +150,264 @@ Roughly 90 seconds each. Say it in my own words, this is just the shape.
 
 ---
 
-# PART C — the words explained
+# PART C — the three pictures, explained properly
+
+This is the part to read before presenting. If someone points at a chart and
+asks "what is that number", the answer is here.
+
+---
+
+## Picture 1 — `fig1_coherence_vs_k.png` (goes on slide 1)
+
+### What you are looking at
+
+A line chart with two lines.
+
+- **Bottom axis** — how many subjects we asked for. We tried 5, 8, 10, 12, 15,
+  20, 25, 30, 40, 50, 60. Each dot is one of those attempts.
+- **Left axis** — the coherence score, from about 0.28 to 0.45. This is a
+  quality score for the word groups. Higher = the words in each group belong
+  together better.
+- **Blue line with circles** — LDA. **Orange line with squares** — LSA.
+- **Pale blue shading** around the blue line — LDA gives a slightly different
+  answer each time it runs, so we ran it **three times** at every setting. The
+  shading is how much those three runs disagreed.
+- **Dashed vertical line at 20** — the number we chose.
+
+### What one dot means
+
+Take the blue dot above 20. To make that single dot we:
+
+1. asked LDA for exactly 20 subjects,
+2. took the **top 10 words** of each of the 20 subjects,
+3. for every pair of those words, checked how often they appear near each other
+   in the real titles,
+4. averaged it all into one number: **0.415**.
+
+That is it. One dot = one whole model, boiled down to one quality number.
+
+### Where the numbers come from
+
+Everything on this chart is read from `data/processed/k_sweep.csv`, which is
+written by `scripts/topic_models.py`. The full table is in
+`reports/03_model_selection.txt` §2. The key rows:
+
+| subjects (k) | LDA score | LSA score |
+|---|---|---|
+| 5 | 0.350 | 0.281 |
+| 10 | 0.375 | 0.310 |
+| **20** | **0.415** | **0.351** |
+| 30 | 0.420 | 0.350 |
+| 40 | 0.438 | 0.346 |
+| 60 | 0.453 | 0.362 |
+
+Coherence is calculated by gensim's `CoherenceModel`, the standard tool — we did
+not invent the measure.
+
+### Why this picture is on the slide
+
+Because it shows the decision we had to make and why the textbook method failed.
+
+Normally you make this chart, find the highest point, and that is your answer.
+Look at our chart: **there is no highest point.** The line is still climbing at
+60. If we had tested 100 settings the "best" would have been 100. That happens
+with very short documents like titles, and it is worth showing rather than
+hiding.
+
+The pale shading is the second half of the argument. The three runs at each
+setting differ by about **0.011**. Look at the gap between 20 (0.415) and 30
+(0.420) — that is 0.005, *smaller than the disagreement between runs of the same
+setting*. So that "improvement" is not real.
+
+So instead of the highest point we took **the bend** — where the line stops
+climbing steeply and flattens. That is at 20 for both lines.
+
+### How the bend is worked out (in case the teacher asks)
+
+Not by eye. We squash both axes onto a 0-to-1 scale, draw a straight line from
+the first dot to the last dot, and find the dot that sits **furthest above** that
+straight line. That dot is the bend. It is a standard method (the "elbow" or
+"knee" method). The code is the `knee()` function in `scripts/topic_models.py`.
+
+### If someone points at it
+
+> "The blue line is the probability model, orange is the maths one. Both keep
+> rising, which is why we could not just take the highest score. The shaded band
+> is how much the model disagrees with itself between runs — it is as wide as the
+> gaps we would be choosing between. So we took the bend at twenty."
+
+---
+
+## Picture 2 — `fig2_views_by_topic.png` (goes on slide 2, the important one)
+
+### What you are looking at
+
+20 horizontal bars, one for each subject LDA found.
+
+- **Each row** is one subject. The label shows its number and its top 3 words,
+  e.g. `10  mystery, serial_killer, murder`.
+- **The line down the middle is 1.0** — a completely normal video for its
+  channel.
+- **Blue bars point right** = that subject gets **more** views than normal.
+- **Red bars point left** = that subject gets **fewer** views than normal.
+- **The number at the end of each bar** (1.36×, 0.45×) is how many times the
+  normal views that subject gets.
+- Bars are sorted best at the top, worst at the bottom.
+
+### What one bar means — a real worked example
+
+Take the top bar, subject 7, at **1.36×**.
+
+LDA assigned **185 titles** to subject 7. For every one of those titles we
+already know its view ratio. We sorted those 185 ratios and took the middle one.
+The middle one is this video:
+
+> **"How a Game Show Solved a Double Homicide"** — Joshua Miles, 111,924 views
+
+Joshua Miles' normal video gets **82,150** views. So:
+
+```
+111,924 ÷ 82,150 = 1.36
+```
+
+That is the whole calculation. The bar is 1.36 because the middle video of that
+subject got 1.36 times its channel's normal views.
+
+We use the **middle value (median)**, not the average, on purpose. One viral
+video can be 56× normal, and an average would let that single video drag the
+whole subject up. The middle value ignores freaks like that.
+
+### How a title ends up in a subject
+
+LDA does not give a title one subject — it gives percentages, like "45% subject
+10, 30% subject 16, 25% spread over the rest". For this chart we put each title
+in **whichever subject has the highest percentage**. Simple, and easy to explain.
+
+(This does throw information away, which is why we also did the statistical test
+that uses all the percentages at once. That is the 6% number.)
+
+### Where the numbers come from
+
+`scripts/evaluate_topics.py` writes `data/processed/topic_views.csv`, and the
+chart is drawn from that file by `scripts/make_figures.py`. The same table with
+extra columns is in `reports/05_views_by_topic.txt` §2. Selected rows:
+
+| subject | titles in it | view ratio | top words |
+|---|---|---|---|
+| 7 | 185 | **1.36×** | say, boyfriend, real, shoot, guilty |
+| 10 | 465 | 1.32× | mystery, serial_killer, murder, unsolved |
+| 8 | 304 | 1.29× | victim, case, chris, boy, robert |
+| … | | ~1.0× | the middle of the chart |
+| 11 | 354 | 0.59× | face, interview, tutorial, history |
+| 3 | 302 | 0.46× | look, find, body, palette |
+| 12 | 622 | **0.45×** | short, test, love, parent, help |
+
+**3× gap** = 1.36 ÷ 0.45.
+
+### Why this picture is on the slide
+
+It *is* our answer. Everything else is method; this is the finding. And the shape
+of it makes the point instantly — you can see the blue block at the top is all
+crime storytelling and the red block at the bottom is all teaching content,
+without reading a single number.
+
+### The one thing to be careful about
+
+In `reports/05_views_by_topic.txt` each row also has square brackets, like
+`1.36 [1.22, 1.63]`. That is how sure we are about that bar. We got it by
+re-drawing the 185 titles at random 2,000 times and seeing how much the middle
+value moved.
+
+**If two subjects' brackets overlap, we cannot say one really beats the other.**
+Subject 7 (1.36) and subject 10 (1.32) overlap — they are joint top, not first
+and second. Read the chart as *top group / middle / bottom group*, and never say
+"subject 7 is the winner".
+
+### If someone points at it
+
+> "The line in the middle is a normal video for that channel. Blue beats normal,
+> red loses to normal. Each bar is the middle video of that subject, so one viral
+> hit cannot inflate it. The top bar means: the middle video about a real case
+> with a courtroom angle got 36% more views than that channel's normal video."
+
+---
+
+## Picture 3 — `fig3_words_by_views.png` (backup slide only)
+
+### What you are looking at
+
+The same idea as picture 2, but with **no model at all** — just single words.
+
+- **Each row is one word** from the titles. The 10 best at the top, the 10 worst
+  at the bottom.
+- Same middle line at 1× = normal for the channel.
+- **`(n=62)`** means that word appears in 62 different titles.
+- The bottom axis is squashed (a log scale) because the range is huge — from
+  0.05× to 3.7×. Without squashing, everything on the left would be an invisible
+  sliver.
+
+### What one bar means
+
+Take **`dark history`**, at the top, 3.73×.
+
+We found every title containing "dark history" — **62** of them. We took the view
+ratio of each, sorted them, and took the middle one: **3.73**. So the middle
+video with "dark history" in its title got 3.7 times its channel's normal views.
+
+At the other end, **`session`** appears in 49 titles and its middle video got
+**0.05×** — one twentieth of normal. Those are counselling role-play videos.
+
+A word needs at least **40 titles** to appear on this chart. Below that the
+middle value bounces around too much to mean anything.
+
+`dark history` is two words joined because our preprocessing detected that they
+almost always appear together, so it treats them as one term. Same for
+`mental health` and `serial killer`.
+
+### Where the numbers come from
+
+`scripts/evaluate_topics.py` §4, listed in `reports/05_views_by_topic.txt`.
+`scripts/make_figures.py` redraws the same calculation for the chart.
+
+### Why this picture exists
+
+This is the honesty check, and it is the strongest thing in my part.
+
+Someone can always say "you got that result because you chose LDA" or "because
+you chose 20 subjects". This chart has **no model in it**. No LSA, no LDA, no
+choice of k — just counting words and looking up view numbers. And it shows the
+same split: crime and mystery words at the top, tutorial and therapy words at the
+bottom.
+
+So the finding is in the data, not in our modelling choices. That is worth one
+sentence in the presentation even if the chart stays on a backup slide.
+
+### If someone points at it
+
+> "This one has no topic model in it at all. We just took each word, found the
+> titles containing it, and looked at the middle view ratio. The same split
+> appears, which tells us the result is not something our model invented."
+
+---
+
+## The one number that is NOT on any picture
+
+**The 6% (R² = 0.064).** It comes from a statistical test, not a chart.
+
+What we did: instead of forcing each title into one subject, we used all 20
+percentages for all 9,785 titles at once, and asked how much of the difference in
+views they can account for. The answer is 6%.
+
+Why we mention it: it stops us overselling. The subject of a title genuinely
+matters — the effect is far too consistent to be luck — but 94% of why a video
+gets views is thumbnail, timing, and how famous the case already was. Saying this
+before the teacher does is worth more than hoping nobody asks.
+
+It is in `reports/05_views_by_topic.txt` §3.
+
+---
+
+# PART D — the words explained
 
 Plain versions, in case someone in the group asks or the teacher does.
 
@@ -192,7 +452,7 @@ nothing for the subject. We delete them.
 
 ---
 
-# PART D — questions we might get
+# PART E — questions we might get
 
 **Why not just take the best coherence score?**
 Because the score never stopped rising. It was still going up at sixty groups. If
@@ -245,7 +505,7 @@ why one channel being 28% of the data matters so much.
 
 ---
 
-# PART E — where every number comes from
+# PART F — where every number comes from
 
 If anyone asks "where did you get that", this is the answer. Everything
 regenerates when the scripts are run; nothing was typed by hand.
@@ -269,8 +529,8 @@ regenerates when the scripts are run; nothing was typed by hand.
 | 0.45× worst subject | §2 | middle value of the 622 titles in that subject |
 | 3× gap | §2 | 1.36 ÷ 0.45 |
 | 6% explained | §3 | statistical model using all 20 subjects at once |
-| "dark history" 3.73× | §4 | middle value of the 66 titles containing it |
-| "session" 0.05× | §4 | middle value of the 50 titles containing it |
+| "dark history" 3.73× | §4 | middle value of the 62 titles containing it |
+| "session" 0.05× | §4 | middle value of the 49 titles containing it |
 
 **About the little brackets on the chart** (`[1.22, 1.63]`): those show how sure
 we are. If two subjects' brackets overlap, we cannot really say one beats the
@@ -278,7 +538,7 @@ other — read the chart in groups of similar bars, not as a strict ranking.
 
 ---
 
-# PART F — not finished yet
+# PART G — not finished yet
 
 **1. The human check still needs the group.** The rubric gives 25 points for
 topic evaluation and asks specifically for human evaluation. I built the test but

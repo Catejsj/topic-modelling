@@ -66,40 +66,41 @@
     threshold for taking a coefficient seriously.
 
 [4] SINGLE WORDS  (sanity check, independent of both topic models)
-    For every word in at least 40 titles: the median view_ratio of the
-    titles containing it. No model involved, so if the topic story is
-    real the same themes should appear here.
+    For every word appearing in at least 40 different titles: the
+    median view_ratio of those titles. One title counts once per word.
+    No model is involved, so if the topic story is real the same themes
+    should appear here too.
 
-    179 words qualify.
+    172 words qualify.
 
     strongest words
-      dark_history                66 titles    3.73x
-      mystery                    223 titles    3.12x
+      dark_history                62 titles    3.73x
+      mystery                    218 titles    3.00x
       danger                      47 titles    2.49x
-      smith                       42 titles    2.33x
-      idaho                       49 titles    2.21x
+      idaho                       42 titles    2.18x
       guilty                      43 titles    2.15x
       mental_health              204 titles    2.13x
       controversy                 47 titles    1.96x
       mysterious                  65 titles    1.94x
       horror                      55 titles    1.91x
-      interview                   55 titles    1.85x
       documentary                 44 titles    1.85x
-      personality                275 titles    1.80x
-      chris                       49 titles    1.76x
+      personality                273 titles    1.80x
+      interview                   54 titles    1.77x
+      chris                       48 titles    1.76x
       sign                        68 titles    1.74x
+      secret                      92 titles    1.74x
 
     weakest words
       eye                         54 titles    0.23x
-      tutorial                   171 titles    0.21x
+      tutorial                   168 titles    0.21x
       client                      46 titles    0.21x
-      palette                     80 titles    0.19x
+      palette                     69 titles    0.18x
       symptom                     51 titles    0.16x
       review                      54 titles    0.13x
       assessment_vignette         44 titles    0.09x
       cbt_role                    69 titles    0.09x
       counsel_diagnostic          40 titles    0.08x
-      session                     50 titles    0.05x
+      session                     49 titles    0.05x
 
 [5] SAME QUESTION THROUGH LSA
     If the two models tell the same story the finding is about the data,

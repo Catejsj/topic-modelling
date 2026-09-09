@@ -129,7 +129,9 @@ def fig_topic_views() -> None:
 def fig_words() -> None:
     docs = pd.read_csv(PROC / "doc_topics.csv")
     docs["tokens"] = docs["tokens"].fillna("").str.split()
-    ex = docs[["view_ratio"]].join(docs["tokens"].explode().rename("word"))
+    # one title counts once per word, even if it repeats the word
+    unique_words = docs["tokens"].map(lambda t: sorted(set(t)))
+    ex = docs[["view_ratio"]].join(unique_words.explode().rename("word"))
     ex = ex.dropna(subset=["word"])
     per = ex.groupby("word").agg(n=("view_ratio", "size"),
                                  med=("view_ratio", "median"))

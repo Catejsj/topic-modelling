@@ -170,12 +170,16 @@ def main() -> None:
 
     # --- [4] single words ------------------------------------------------
     say("[4] SINGLE WORDS  (sanity check, independent of both topic models)")
-    say("    For every word in at least 40 titles: the median view_ratio of the")
-    say("    titles containing it. No model involved, so if the topic story is")
-    say("    real the same themes should appear here.")
+    say("    For every word appearing in at least 40 different titles: the")
+    say("    median view_ratio of those titles. One title counts once per word.")
+    say("    No model is involved, so if the topic story is real the same themes")
+    say("    should appear here too.")
     say()
+    # A word repeated inside one title must not count that title twice, so
+    # each title contributes each of its words once.
+    unique_words = df["tokens"].map(lambda t: sorted(set(t)))
     exploded = df[["view_ratio"]].join(
-        df["tokens"].explode().rename("word")).dropna(subset=["word"])
+        unique_words.explode().rename("word")).dropna(subset=["word"])
     per_word = exploded.groupby("word").agg(
         n=("view_ratio", "size"), median_ratio=("view_ratio", "median"))
     per_word = per_word[per_word["n"] >= 40].sort_values(
