@@ -66,8 +66,7 @@ is LSA, dashed vertical line marks 20.
 Right half of the slide, bullets on the left half. Blue bars are above normal,
 red bars are below normal.
 
-**If there is space**, `figures/fig3_words_by_views.png` can go on a backup slide
-at the end. Do not put it on slide 2 — two big charts on one slide is too much.
+
 
 ---
 
