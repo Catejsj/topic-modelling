@@ -1,0 +1,22 @@
+[1] WHAT COUNTS AS A NAME
+    capitalised mid-title in >= 90% of its occurrences,
+    seen at least 3 times          1,309 words
+    of those, also ordinary English nouns    923 (kept unless also a given name)
+    dropped in the ablation                  495
+
+    examples dropped: abulaban, addimando, alcala, alexithymia, ali, alissa, allitt, amato, amityville, andreacchio, angel, angelina, ann, annabelle, anni, arbery, aren't, armstrong, arnold, arthur
+    examples kept:    academy, access, accounts, accurate, active, actual, acute, addiction, addressing, adult, adventure, affair, affect, affective, affidavit, age, aggression, agreeableness, air, alabama
+
+[2] EFFECT ON LDA COHERENCE
+       k   names kept   names dropped    change
+      10        0.371           0.370    -0.002
+      15        0.372           0.408    +0.036
+      20        0.395           0.429    +0.034
+      25        0.435           0.408    -0.027
+
+[3] CONCLUSION
+    mean change +0.010, and the sign is not consistent across k (2 of 4 improved).
+    There is no reliable gain, so names are kept in the main pipeline.
+    Reported so that the choice is evidence rather than preference.
+    The cost of keeping them is visible in the topic word lists, where
+    first names appear among the top words of several topics.
